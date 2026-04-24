@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GASOS 2026 – Generátor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--bg-card:#161b22;--bg-input:#010409;--bg-hover:#1c2128;
+  --border:#30363d;--border-dim:#21262d;
+  --text:#e6edf3;--text-muted:#8b949e;--text-dim:#6e7681;
+  --green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;
+  --warn:#d29922;--err:#f85149;
+  --r:8px;--rl:12px;
+}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;font-size:15px}
+
+/* HEADER */
+header{border-bottom:1px solid var(--border);padding:.75rem 1.75rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;background:rgba(13,17,23,.92);z-index:100;backdrop-filter:blur(12px)}
+.logo{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:600;color:var(--green);letter-spacing:.08em}
+.logo span{color:var(--text-dim)}
+nav{display:flex;gap:.4rem;margin-left:auto}
+.nav-btn{background:none;border:1px solid transparent;color:var(--text-muted);padding:.35rem 1rem;border-radius:var(--r);cursor:pointer;font-family:'Sora',sans-serif;font-size:.85rem;font-weight:500;transition:all .15s}
+.nav-btn:hover{color:var(--text);background:var(--bg-hover)}
+.nav-btn.active{color:var(--green);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.08)}
+
+/* MAIN */
+main{max-width:1100px;margin:0 auto;padding:2rem 1.75rem}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* PAGE HEADER */
+.page-header{margin-bottom:2rem}
+.page-header h1{font-size:1.6rem;font-weight:700;margin-bottom:.4rem}
+.page-header p{color:var(--text-muted);font-size:.9rem}
+
+/* CARD */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;margin-bottom:1.25rem}
+.card-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:1rem}
+
+/* TYPE GRID */
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.5rem}
+.type-opt{border:1px solid var(--border);border-radius:var(--r);padding:1rem;cursor:pointer;transition:all .15s;background:var(--bg-input)}
+.type-opt:hover{border-color:rgba(63,185,80,.3);background:var(--bg-hover)}
+.type-opt.sel{border-color:var(--green);background:rgba(63,185,80,.07)}
+.type-opt input{display:none}
+.type-badge{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:600;color:var(--green);margin-bottom:.35rem}
+.type-desc{font-size:.78rem;color:var(--text-muted);line-height:1.4}
+
+/* FIELD */
+.field{margin-bottom:1.2rem}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:.45rem;letter-spacing:.01em}
+.field input,.field textarea{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:'Sora',sans-serif;font-size:.9rem;padding:.55rem .875rem;transition:border-color .15s;outline:none}
+.field input:focus,.field textarea:focus{border-color:var(--blue)}
+.field textarea{resize:vertical;min-height:80px;line-height:1.55}
+.field-hint{font-size:.73rem;color:var(--text-dim);margin-top:.3rem}
+.field input.err-border{border-color:var(--err)}
+.field input.warn-border{border-color:var(--warn)}
+
+/* RESULT BOX */
+.result-box{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;margin-top:1.25rem}
+.result-name{font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:500;flex:1;word-break:break-all}
+.pt{color:var(--blue)}.ps{color:var(--text-dim)}.pn{color:var(--text)}.pa{color:var(--purple)}.pp{color:var(--text-dim);font-style:italic}
+
+/* VALIDATION */
+.vlist{list-style:none;margin-top:.85rem;display:flex;flex-direction:column;gap:.35rem}
+.vi{font-size:.8rem;display:flex;align-items:center;gap:.45rem;padding:.3rem 0}
+.vi.ok{color:var(--green)}.vi.warn{color:var(--warn)}.vi.err{color:var(--err)}
+.vi svg{width:14px;height:14px;flex-shrink:0}
+
+/* BUTTONS */
+.copy-btn{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.25);color:var(--green);padding:.45rem 1.1rem;border-radius:var(--r);cursor:pointer;font-family:'Sora',sans-serif;font-size:.82rem;font-weight:600;transition:all .15s;white-space:nowrap}
+.copy-btn:hover{background:rgba(63,185,80,.2)}
+.copy-btn.copied{background:rgba(63,185,80,.22);border-color:var(--green)}
+.btn-primary{background:var(--green);color:#0d1117;border:none;padding:.6rem 1.5rem;border-radius:var(--r);cursor:pointer;font-family:'Sora',sans-serif;font-size:.88rem;font-weight:700;transition:all .15s}
+.btn-primary:hover{background:#4ac757}
+.btn-secondary{background:var(--bg-hover);color:var(--text);border:1px solid var(--border);padding:.6rem 1.25rem;border-radius:var(--r);cursor:pointer;font-family:'Sora',sans-serif;font-size:.88rem;font-weight:500;transition:all .15s}
+.btn-secondary:hover{border-color:var(--text-muted)}
+.actions{display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap}
+
+/* TOPICS */
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.chip{background:var(--bg-input);border:1px solid var(--border);color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.73rem;padding:.22rem .6rem;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--text-dim);color:var(--text)}
+.chip.sel{background:rgba(88,166,255,.1);border-color:var(--blue);color:var(--blue)}
+
+/* README LAYOUT */
+.readme-layout{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+@media(max-width:820px){.readme-layout{grid-template-columns:1fr}.preview-panel{display:none}.type-grid{grid-template-columns:1fr}}
+
+/* PREVIEW PANEL */
+.preview-panel{position:sticky;top:70px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;max-height:calc(100vh - 100px);display:flex;flex-direction:column}
+.preview-header{background:var(--bg-hover);border-bottom:1px solid var(--border);padding:.55rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.preview-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim)}
+.ptabs{display:flex;gap:.2rem}
+.ptab{background:none;border:none;color:var(--text-dim);font-size:.75rem;padding:.22rem .55rem;border-radius:4px;cursor:pointer;font-family:'Sora',sans-serif;transition:all .1s}
+.ptab.active{background:var(--bg-card);color:var(--text)}
+.preview-body{padding:1.25rem;overflow-y:auto;flex:1}
+
+/* MD PREVIEW */
+.md-preview{font-size:.85rem;line-height:1.75;color:var(--text)}
+.md-preview h1{font-size:1.3rem;font-weight:700;margin:0 0 .875rem;border-bottom:1px solid var(--border);padding-bottom:.5rem}
+.md-preview h2{font-size:1rem;font-weight:600;margin:1.25rem 0 .45rem;color:var(--text)}
+.md-preview h3{font-size:.9rem;font-weight:600;margin:.9rem 0 .35rem}
+.md-preview p{margin:0 0 .65rem}
+.md-preview blockquote{border-left:3px solid var(--border);padding-left:.875rem;color:var(--text-muted);margin:0 0 .65rem;font-style:italic}
+.md-preview ul,.md-preview ol{margin:0 0 .65rem 1.25rem}
+.md-preview li{margin:.18rem 0}
+.md-preview code{font-family:'JetBrains Mono',monospace;font-size:.78rem;background:var(--bg-hover);padding:.1em .3em;border-radius:4px;color:var(--purple)}
+.md-preview pre{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r);padding:.875rem;overflow-x:auto;margin:0 0 .65rem}
+.md-preview pre code{background:none;padding:0;color:var(--text);font-size:.78rem}
+.md-preview strong{font-weight:700}
+.md-preview hr{border:none;border-top:1px solid var(--border);margin:1.1rem 0}
+.md-preview a{color:var(--blue)}
+.raw-preview{font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-word}
+
+/* SECTION DIVIDER */
+.sdiv{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin:1.5rem 0 .875rem;display:flex;align-items:center;gap:.6rem}
+.sdiv::after{content:'';flex:1;height:1px;background:var(--border)}
+.opt-badge{font-size:.68rem;background:var(--bg-hover);border:1px solid var(--border);color:var(--text-dim);padding:.1rem .35rem;border-radius:4px;font-weight:500;text-transform:lowercase;letter-spacing:0}
+
+/* TOPICS FOOTER */
+.topics-footer{display:flex;align-items:center;gap:.75rem;margin-top:1rem;flex-wrap:wrap}
+.topics-result{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-muted);flex:1;word-break:break-all}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
+
+/* EMPTY STATE */
+.empty-md{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--text-dim);font-size:.83rem;gap:.5rem;text-align:center}
+.empty-md svg{opacity:.3}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">GASOS<span>/</span>2026</div>
+  <nav>
+    <button class="nav-btn active" onclick="switchTab('repo')" id="nbtn-repo">Název repozitáře</button>
+    <button class="nav-btn" onclick="switchTab('readme')" id="nbtn-readme">README.md</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ═══════════════════════ TAB: REPO ═══════════════════════ -->
+<div id="tab-repo" class="tab-content active">
+  <div class="page-header">
+    <h1>Generátor názvu repozitáře</h1>
+    <p>Vytvoří správně formátovaný název podle konvencí GASOS 2026.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-label">1. Typ repozitáře</div>
+    <div class="type-grid">
+      <label class="type-opt sel" id="type-proj" onclick="selectType('proj')">
+        <input type="radio" name="rt" value="proj" checked>
+        <div class="type-badge">proj</div>
+        <div class="type-desc">Hotový projekt — maturitní zadání</div>
+      </label>
+      <label class="type-opt" id="type-lab" onclick="selectType('lab')">
+        <input type="radio" name="rt" value="lab">
+        <div class="type-badge">lab</div>
+        <div class="type-desc">Izolovaná ukázka / studijní repo</div>
+      </label>
+      <label class="type-opt" id="type-template" onclick="selectType('template')">
+        <input type="radio" name="rt" value="template">
+        <div class="type-badge">template</div>
+        <div class="type-desc">Šablona projektu</div>
+      </label>
+    </div>
+
+    <div class="field">
+      <label for="r-name">Název (co to je)</label>
+      <input type="text" id="r-name" placeholder="library-system" oninput="updateRepo()" onblur="normalizeRepo()">
+      <div class="field-hint">kebab-case · bez technologií · bez diakritiky · bez mezer</div>
+    </div>
+    <div class="field">
+      <label for="r-author">Autor</label>
+      <input type="text" id="r-author" placeholder="prokop" oninput="updateRepo()" onblur="normalizeRepo()">
+      <div class="field-hint">lowercase · bez diakritiky · mezery → pomlčka</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Výsledný název repozitáře</div>
+    <div class="result-box">
+      <div class="result-name" id="r-result"><span class="pp">vyplňte název a autora výše</span></div>
+      <button class="copy-btn" id="copy-repo" onclick="copyRepo()">Kopírovat</button>
+    </div>
+    <ul class="vlist" id="vlist"></ul>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Topics (témata na GitHubu)</div>
+    <p style="font-size:.83rem;color:var(--text-muted);margin-bottom:.75rem">Technologie nepatří do názvu — patří do <strong>topics</strong>. Klikni na použité technologie:</p>
+    <div class="chips" id="topics-chips"></div>
+    <div class="topics-footer">
+      <div class="topics-result" id="topics-result">žádné topics nevybrány</div>
+      <button class="copy-btn" id="copy-topics" onclick="copyTopics()">Kopírovat topics</button>
+    </div>
+  </div>
+
+  <div class="card" style="border-style:dashed;opacity:.75">
+    <div class="card-label">Příklady správných názvů</div>
+    <div style="display:flex;flex-direction:column;gap:.45rem;font-family:'JetBrains Mono',monospace;font-size:.82rem">
+      <div><span style="color:var(--blue)">proj</span><span style="color:var(--text-dim)">-</span><span>library-system</span><span style="color:var(--text-dim)">-</span><span style="color:var(--purple)">prokop</span></div>
+      <div><span style="color:var(--blue)">lab</span><span style="color:var(--text-dim)">-</span><span>multithreading</span><span style="color:var(--text-dim)">-</span><span style="color:var(--purple)">svoboda</span></div>
+      <div><span style="color:var(--blue)">template</span><span style="color:var(--text-dim)">-</span><span>javafx</span><span style="color:var(--text-dim)">-</span><span style="color:var(--purple)">prokop</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ TAB: README ═══════════════════════ -->
+<div id="tab-readme" class="tab-content">
+  <div class="page-header">
+    <h1>Generátor README.md</h1>
+    <p>Vyplň formulář a získej hotový README soubor připravený pro repozitář.</p>
+  </div>
+
+  <div class="readme-layout">
+    <!-- FORM -->
+    <div class="form-panel">
+      <div class="card">
+        <div class="field">
+          <label for="rm-title">Název projektu</label>
+          <input type="text" id="rm-title" placeholder="Library System" oninput="updateReadme()">
+        </div>
+        <div class="field">
+          <label for="rm-subtitle">Stručný popis <span style="font-weight:400;color:var(--text-dim)">(volitelné)</span></label>
+          <input type="text" id="rm-subtitle" placeholder="JavaFX aplikace pro správu knihovny s MySQL databází" oninput="updateReadme()">
+        </div>
+      </div>
+
+      <div class="sdiv">📌 Zadání</div>
+      <div class="card">
+        <div class="field">
+          <label for="rm-zadani">Popis zadání — co bylo požadováno</label>
+          <textarea id="rm-zadani" placeholder="Aplikace pro správu knihovny s grafickým rozhraním, ukládáním knih do databáze, vyhledáváním a správou výpůjček." oninput="updateReadme()"></textarea>
+        </div>
+        <div class="field">
+          <label for="rm-omezeni">Omezení / podmínky <span style="font-weight:400;color:var(--text-dim)">(volitelné)</span></label>
+          <input type="text" id="rm-omezeni" placeholder="Musí používat JavaFX, MySQL a multithreading" oninput="updateReadme()">
+        </div>
+        <div class="field">
+          <label for="rm-odkaz">Odkaz na zadání <span style="font-weight:400;color:var(--text-dim)">(volitelné)</span></label>
+          <input type="url" id="rm-odkaz" placeholder="https://..." oninput="updateReadme()">
+        </div>
+      </div>
+
+      <div class="sdiv">🧠 Shrnutí implementace</div>
+      <div class="card">
+        <div class="field">
+          <label for="rm-arch">Architektura a přístup</label>
+          <textarea id="rm-arch" placeholder="Aplikace využívá MVC architekturu. Data jsou spravována přes DAO vrstvu pomocí JDBC. GUI je vytvořeno v JavaFX a komunikace probíhá přes controllery." oninput="updateReadme()"></textarea>
+        </div>
+        <div class="field">
+          <label for="rm-tridy">Hlavní třídy / komponenty <span style="font-weight:400;color:var(--text-dim)">(každá na řádek)</span></label>
+          <textarea id="rm-tridy" placeholder="BookDAO&#10;BookController&#10;DatabaseManager" rows="4" oninput="updateReadme()"></textarea>
+        </div>
+      </div>
+
+      <div class="sdiv">⚙️ Použité technologie</div>
+      <div class="card">
+        <div class="field">
+          <label>Vyberte technologie (klikněte pro výběr)</label>
+          <div class="chips" id="tech-chips"></div>
+        </div>
+        <div class="field">
+          <label for="rm-techx">Další technologie <span style="font-weight:400;color:var(--text-dim)">(oddělte čárkou)</span></label>
+          <input type="text" id="rm-techx" placeholder="Logback, HikariCP, Apache Commons" oninput="updateReadme()">
+        </div>
+      </div>
+
+      <div class="sdiv">▶️ Spuštění</div>
+      <div class="card">
+        <div class="field">
+          <label for="rm-req">Požadavky <span style="font-weight:400;color:var(--text-dim)">(každý na řádek)</span></label>
+          <textarea id="rm-req" placeholder="Java 17+&#10;MySQL 8.0+&#10;Maven 3.8+" rows="3" oninput="updateReadme()"></textarea>
+        </div>
+        <div class="field">
+          <label for="rm-steps">Kroky ke spuštění <span style="font-weight:400;color:var(--text-dim)">(každý krok na řádek → číslování automaticky)</span></label>
+          <textarea id="rm-steps" placeholder="Nastav připojení k databázi v config.properties&#10;Spusť databázové schéma ze složky /db&#10;Spusť Main.java" rows="4" oninput="updateReadme()"></textarea>
+        </div>
+      </div>
+
+      <div class="sdiv">⚠️ Problémy <span class="opt-badge">volitelné</span></div>
+      <div class="card">
+        <div class="field">
+          <label for="rm-bugs">Známé problémy / nedodělky <span style="font-weight:400;color:var(--text-dim)">(každý na řádek)</span></label>
+          <textarea id="rm-bugs" placeholder="Vyhledávání je case-sensitive&#10;Pagination není implementována" oninput="updateReadme()"></textarea>
+        </div>
+      </div>
+
+      <div class="sdiv">💡 Poznámky <span class="opt-badge">volitelné</span></div>
+      <div class="card">
+        <div class="field">
+          <label for="rm-notes">Poznámky / zkušenosti</label>
+          <textarea id="rm-notes" placeholder="JDBC mi dalo zabrat, příště zvážím ORM. Multithreading byl složitější než jsem čekal..." oninput="updateReadme()"></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" onclick="downloadReadme()">Stáhnout README.md</button>
+        <button class="btn-secondary" onclick="copyReadme(this)">Kopírovat Markdown</button>
+      </div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span class="preview-title">Náhled README</span>
+        <div class="ptabs">
+          <button class="ptab active" id="pt-rendered" onclick="switchPrev('rendered')">Rendered</button>
+          <button class="ptab" id="pt-raw" onclick="switchPrev('raw')">Markdown</button>
+        </div>
+      </div>
+      <div class="preview-body">
+        <div class="md-preview" id="prev-rendered">
+          <div class="empty-md">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <span>Začni vyplňovat formulář<br>a tady uvidíš náhled README.</span>
+          </div>
+        </div>
+        <pre class="raw-preview" id="prev-raw" style="display:none"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+<script>
+// ─── CONFIG ──────────────────────────────────────────────
+const FORBIDDEN = ['final','final2','oprava','test','new','verze','verze2','fixed','hotovo','novy','nova','projekt','super','moje','appka','app2'];
+const TECH_IN_NAME = ['java','javafx','mysql','jdbc','spring','maven','gradle','sqlite','postgres','hibernate','fx'];
+const ALL_TOPICS = ['java','javafx','jdbc','mysql','sqlite','postgres','oop','threads','logging','network','files','serialization','mvc','dao','maven','gradle','gui','rest','json','xml','swing','hibernate','spring','junit'];
+
+let selectedTopics = new Set();
+let selectedTechs = new Set();
+let currentType = 'proj';
+
+// ─── TABS ─────────────────────────────────────────────────
+function switchTab(t) {
+  ['repo','readme'].forEach(id => {
+    document.getElementById('tab-'+id).classList.toggle('active', id===t);
+    document.getElementById('nbtn-'+id).classList.toggle('active', id===t);
+  });
+}
+
+// ─── REPO TYPE ────────────────────────────────────────────
+function selectType(t) {
+  currentType = t;
+  ['proj','lab','template'].forEach(id => {
+    document.getElementById('type-'+id).classList.toggle('sel', id===t);
+  });
+  const radios = document.querySelectorAll('input[name="rt"]');
+  radios.forEach(r => { if(r.value===t) r.checked=true; });
+  updateRepo();
+}
+
+// ─── HELPERS ─────────────────────────────────────────────
+function removeDia(s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function toKebab(s) {
+  return removeDia(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+
+// ─── REPO UPDATE ─────────────────────────────────────────
+function normalizeRepo() {
+  const ni = document.getElementById('r-name');
+  const ai = document.getElementById('r-author');
+  ni.value = toKebab(ni.value);
+  ai.value = toKebab(ai.value);
+  updateRepo();
+}
+
+function updateRepo() {
+  const rawName = document.getElementById('r-name').value;
+  const rawAuthor = document.getElementById('r-author').value;
+  const name = toKebab(rawName);
+  const author = toKebab(rawAuthor);
+
+  const rEl = document.getElementById('r-result');
+  if (!name && !author) {
+    rEl.innerHTML = '<span class="pp">vyplňte název a autora výše</span>';
+  } else {
+    rEl.innerHTML =
+      `<span class="pt">${currentType}</span>` +
+      `<span class="ps">-</span>` +
+      (name ? `<span class="pn">${name}</span>` : `<span class="pp">název</span>`) +
+      `<span class="ps">-</span>` +
+      (author ? `<span class="pa">${author}</span>` : `<span class="pp">autor</span>`);
+  }
+
+  // Validation
+  const errs=[], warns=[], oks=[];
+  if (name) {
+    const parts = name.split('-');
+    if (parts.some(p => FORBIDDEN.includes(p))) {
+      errs.push('Obsahuje zakázané slovo (final, test, oprava, new, …)');
+    } else {
+      oks.push('Název neobsahuje zakázaná slova');
+    }
+    if (parts.some(p => TECH_IN_NAME.includes(p)) && currentType !== 'template') {
+      warns.push('Název obsahuje technologii — přesuň to do topics');
+    }
+    if (/[A-Z]/.test(rawName)) errs.push('Název obsahuje velká písmena');
+    if (/[čšžřýáíéúůóěďťň]/i.test(rawName)) errs.push('Název obsahuje diakritiku');
+    if (/\s/.test(rawName)) warns.push('Název obsahuje mezery — budou převedeny na pomlčky');
+    if (/^[a-z0-9-]+$/.test(name)) oks.push('Formát je správný (kebab-case)');
+    if (name.length > 40) warns.push(`Název je dlouhý (${name.length} znaků) — zkrať ho`);
+  } else if (rawName) {
+    errs.push('Název je prázdný po normalizaci');
+  }
+
+  if (author) {
+    if (/[čšžřýáíéúůóěďťň]/i.test(rawAuthor)) warns.push('Autor obsahuje diakritiku — bude odstraněna');
+    if (/^[a-z0-9-]+$/.test(author)) oks.push('Autor je správně formátovaný');
+  }
+
+  if (name && author) {
+    const full = `${currentType}-${name}-${author}`;
+    if (full.length > 50) warns.push(`Celková délka: ${full.length} znaků — ideálně pod 50`);
+    else oks.push(`Celková délka: ${full.length} znaků ✓`);
+  }
+
+  const ico = {
+    err: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+    warn: `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2.5l6.2 11H1.8L8 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><line x1="8" y1="7" x2="8" y2="10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="12" r=".6" fill="currentColor"/></svg>`,
+    ok: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M5.2 8.1l2.2 2.2 3.4-3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  };
+
+  document.getElementById('vlist').innerHTML = [
+    ...errs.map(e=>`<li class="vi err">${ico.err}${e}</li>`),
+    ...warns.map(w=>`<li class="vi warn">${ico.warn}${w}</li>`),
+    ...oks.map(o=>`<li class="vi ok">${ico.ok}${o}</li>`),
+  ].join('');
+}
+
+function copyRepo() {
+  const name = toKebab(document.getElementById('r-name').value);
+  const author = toKebab(document.getElementById('r-author').value);
+  if (!name || !author) return;
+  navigator.clipboard.writeText(`${currentType}-${name}-${author}`);
+  flash('copy-repo','Zkopírováno!','Kopírovat');
+}
+
+// ─── TOPICS ───────────────────────────────────────────────
+function initChips() {
+  document.getElementById('topics-chips').innerHTML = ALL_TOPICS.map(t =>
+    `<span class="chip" id="topchip-${t}" onclick="toggleTopic('${t}')">${t}</span>`
+  ).join('');
+  document.getElementById('tech-chips').innerHTML = ALL_TOPICS.map(t =>
+    `<span class="chip" id="techchip-${t}" onclick="toggleTech('${t}')">${t}</span>`
+  ).join('');
+}
+
+function toggleTopic(t) {
+  selectedTopics.has(t) ? selectedTopics.delete(t) : selectedTopics.add(t);
+  document.getElementById('topchip-'+t)?.classList.toggle('sel');
+  const arr = [...selectedTopics];
+  const el = document.getElementById('topics-result');
+  el.textContent = arr.length ? arr.join(', ') : 'žádné topics nevybrány';
+  el.style.color = arr.length ? 'var(--text)' : 'var(--text-muted)';
+}
+
+function toggleTech(t) {
+  selectedTechs.has(t) ? selectedTechs.delete(t) : selectedTechs.add(t);
+  document.getElementById('techchip-'+t)?.classList.toggle('sel');
+  updateReadme();
+}
+
+function copyTopics() {
+  const arr = [...selectedTopics];
+  if (!arr.length) return;
+  navigator.clipboard.writeText(arr.join(', '));
+  flash('copy-topics','Zkopírováno!','Kopírovat topics');
+}
+
+// ─── README ───────────────────────────────────────────────
+function getReadme() {
+  const title    = document.getElementById('rm-title').value.trim()  || 'Název projektu';
+  const subtitle = document.getElementById('rm-subtitle').value.trim();
+  const zadani   = document.getElementById('rm-zadani').value.trim();
+  const omezeni  = document.getElementById('rm-omezeni').value.trim();
+  const odkaz    = document.getElementById('rm-odkaz').value.trim();
+  const arch     = document.getElementById('rm-arch').value.trim();
+  const tridy    = document.getElementById('rm-tridy').value.trim();
+  const techx    = document.getElementById('rm-techx').value.trim();
+  const req      = document.getElementById('rm-req').value.trim();
+  const steps    = document.getElementById('rm-steps').value.trim();
+  const bugs     = document.getElementById('rm-bugs').value.trim();
+  const notes    = document.getElementById('rm-notes').value.trim();
+
+  const techs = [...selectedTechs];
+  if (techx) techx.split(',').map(s=>s.trim()).filter(Boolean).forEach(t=>techs.push(t));
+
+  let md = `# ${title}\n`;
+  if (subtitle) md += `\n> ${subtitle}\n`;
+
+  md += `\n---\n\n## 📌 Zadání\n\n`;
+  md += (zadani || '_Popis zadání_') + '\n';
+  if (omezeni) md += `\n**Omezení:** ${omezeni}\n`;
+  if (odkaz)   md += `\n**Zadání:** [odkaz](${odkaz})\n`;
+
+  md += `\n## 🧠 Shrnutí implementace\n\n`;
+  md += (arch || '_Popis architektury a implementace_') + '\n';
+  if (tridy) {
+    md += `\n**Hlavní komponenty:**\n`;
+    tridy.split('\n').map(s=>s.trim()).filter(Boolean).forEach(t => {
+      md += `- \`${t}\`\n`;
+    });
+  }
+
+  md += `\n## ⚙️ Použité technologie\n\n`;
+  if (techs.length) techs.forEach(t => md += `- ${t}\n`);
+  else md += '_Doplňte použité technologie_\n';
+
+  md += `\n## ▶️ Spuštění projektu\n\n`;
+  if (req) {
+    md += `**Požadavky:**\n`;
+    req.split('\n').map(s=>s.trim()).filter(Boolean).forEach(p => md += `- ${p}\n`);
+    md += '\n';
+  }
+  if (steps) {
+    md += `**Kroky:**\n\n`;
+    steps.split('\n').map(s=>s.trim()).filter(Boolean).forEach((s,i) => md += `${i+1}. ${s}\n`);
+  } else {
+    md += '_Popis kroků ke spuštění_\n';
+  }
+
+  if (bugs) {
+    md += `\n## ⚠️ Známé problémy / nedodělky\n\n`;
+    bugs.split('\n').map(s=>s.trim()).filter(Boolean).forEach(b => md += `- ${b}\n`);
+  }
+
+  if (notes) {
+    md += `\n## 💡 Poznámky / zkušenosti\n\n${notes}\n`;
+  }
+
+  return md;
+}
+
+let previewMode = 'rendered';
+
+function updateReadme() {
+  const md = getReadme();
+  const hasContent = document.getElementById('rm-title').value ||
+    document.getElementById('rm-zadani').value ||
+    document.getElementById('rm-arch').value;
+
+  const rendEl = document.getElementById('prev-rendered');
+  const rawEl  = document.getElementById('prev-raw');
+
+  if (hasContent && typeof marked !== 'undefined') {
+    rendEl.innerHTML = marked.parse(md);
+  } else if (hasContent) {
+    rendEl.innerHTML = `<pre style="font-size:.8rem;white-space:pre-wrap">${md}</pre>`;
+  } else {
+    rendEl.innerHTML = `<div class="empty-md"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><span>Začni vyplňovat formulář<br>a tady uvidíš náhled README.</span></div>`;
+  }
+  rawEl.textContent = md;
+}
+
+function switchPrev(mode) {
+  previewMode = mode;
+  document.getElementById('prev-rendered').style.display = mode==='rendered' ? 'block' : 'none';
+  document.getElementById('prev-raw').style.display = mode==='raw' ? 'block' : 'none';
+  document.getElementById('pt-rendered').classList.toggle('active', mode==='rendered');
+  document.getElementById('pt-raw').classList.toggle('active', mode==='raw');
+}
+
+function copyReadme(btn) {
+  navigator.clipboard.writeText(getReadme());
+  const orig = btn.textContent;
+  btn.textContent = 'Zkopírováno!';
+  setTimeout(() => btn.textContent = orig, 2000);
+}
+
+function downloadReadme() {
+  const blob = new Blob([getReadme()], {type:'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'README.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── UTIL ─────────────────────────────────────────────────
+function flash(id, label, orig) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.textContent = label;
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+initChips();
+updateRepo();
+updateReadme();
+</script>
+</body>
+</html>
